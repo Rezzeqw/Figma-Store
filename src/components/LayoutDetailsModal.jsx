@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function LayoutDetailsModal({ isOpen, onClose, layout, onAddToCart, isInCart, darkMode }) {
+export default function LayoutDetailsModal({ isOpen, onClose, layout, onAddToCart, isInCart, darkMode, isAdmin }) {
   if (!isOpen || !layout) return null;
 
   const { title, category, price, previewImage, author, tags, description } = layout;
@@ -65,19 +65,21 @@ export default function LayoutDetailsModal({ isOpen, onClose, layout, onAddToCar
             </span>
           </div>
 
-          <button
-            onClick={() => {
-              const rect = document.body.getBoundingClientRect();
-              onAddToCart(layout, rect, previewImage);
-            }}
-            className={`px-6 py-3.5 font-black text-sm rounded-xl transition-all shadow-lg active:scale-95 ${
-              isInCart
-                ? 'bg-slate-800 border border-lime-400 text-lime-400 hover:bg-slate-700'
-                : 'bg-lime-400 hover:bg-lime-300 text-slate-950 shadow-[0_0_20px_rgba(163,230,53,0.3)]'
-            }`}
-          >
-            {isInCart ? '✓ В корзине' : 'Добавить в корзину'}
-          </button>
+          {!isAdmin && (
+            <button
+              onClick={() => {
+                const rect = document.body.getBoundingClientRect();
+                onAddToCart(layout, rect, previewImage);
+              }}
+              className={`px-6 py-3.5 font-black text-sm rounded-xl transition-all shadow-lg active:scale-95 ${
+                isInCart
+                  ? 'bg-slate-800 border border-lime-400 text-lime-400 hover:bg-slate-700'
+                  : 'bg-lime-400 hover:bg-lime-300 text-slate-950 shadow-[0_0_20px_rgba(163,230,53,0.3)]'
+              }`}
+            >
+              {isInCart ? '✓ В корзине' : 'Добавить в корзину'}
+            </button>
+          )}
         </div>
       </div>
     </div>

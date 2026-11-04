@@ -6,22 +6,41 @@ export default function AddLayoutModal({ isOpen, onClose, onAddLayout, darkMode 
     category: 'Landing',
     price: '',
     previewImage: '',
+    description: '',
     tags: ''
   });
 
   if (!isOpen) return null;
 
+  // Функция для загрузки картинки с компьютера
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, previewImage: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.previewImage) {
+      alert('Пожалуйста, выберите картинку с устройства!');
+      return;
+    }
+
     const newLayout = {
-      id: Date.now().toString(),
       title: formData.title,
       category: formData.category,
       price: Number(formData.price) || 0,
-      previewImage: formData.previewImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+      previewImage: formData.previewImage,
+      description: formData.description,
       tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : ['Figma'],
-      author: { name: 'Администратор', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80' }
+      author: { name: 'Администратор', avatar: 'https://i.pravatar.cc/150?img=11' }
     };
+
     onAddLayout(newLayout);
     onClose();
   };
@@ -34,7 +53,7 @@ export default function AddLayoutModal({ isOpen, onClose, onAddLayout, darkMode 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
       <div className="fixed inset-0" onClick={onClose} />
 
-      <div className={`relative z-10 w-full max-w-md border rounded-3xl p-6 sm:p-8 shadow-2xl transition-colors duration-300 ${
+      <div className={`relative z-10 w-full max-w-md border rounded-3xl p-6 sm:p-8 shadow-2xl transition-colors duration-300 max-h-[90vh] overflow-y-auto ${
         darkMode ? 'bg-slate-900 border-purple-900/50 text-white' : 'bg-white border-slate-200 text-slate-900'
       }`}>
         <button
@@ -48,7 +67,7 @@ export default function AddLayoutModal({ isOpen, onClose, onAddLayout, darkMode 
 
         <h2 className="text-2xl font-black mb-2 text-center">Добавить макет</h2>
         <p className={`text-xs text-center mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-          Функция доступна только администратору
+          Загрузите картинку с устройства и заполните данные
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -102,13 +121,26 @@ export default function AddLayoutModal({ isOpen, onClose, onAddLayout, darkMode 
           </div>
 
           <div>
-            <label className="block text-xs font-bold mb-1.5">Ссылка на картинку (URL)</label>
-            <input
-              type="url"
-              name="previewImage"
-              value={formData.previewImage}
+            <label className="block text-xs font-bold mb-1.5">Обложка с устройства</label>
+            <div className="flex items-center gap-3">
+              {formData.previewImage && (
+                <img src={formData.previewImage} alt="Preview" className="w-12 h-12 rounded-xl object-cover border border-lime-400" />
+              )}
+              <label className="flex-1 cursor-pointer px-4 py-3 bg-purple-950/40 hover:bg-purple-900/60 text-lime-400 font-bold text-xs rounded-xl text-center transition-all border border-lime-400/40">
+                {formData.previewImage ? 'Изменить картинку' : 'Выбрать файл'}
+                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold mb-1.5">Описание</label>
+            <textarea
+              name="description"
+              rows="2"
+              value={formData.description}
               onChange={handleChange}
-              placeholder="https://images.unsplash.com/..."
+              placeholder="Подробное описание макета..."
               className={`w-full text-sm rounded-xl px-4 py-3 border focus:outline-none focus:border-lime-400 ${
                 darkMode ? 'bg-slate-800/80 border-purple-800/40 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
               }`}

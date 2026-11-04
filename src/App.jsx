@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { supabase } from './supabaseClient';
 import Header from './components/Header';
 import LayoutCard from './components/LayoutCard';
 import CategoryTabs from './components/CategoryTabs';
@@ -9,71 +10,39 @@ import AddLayoutModal from './components/AddLayoutModal';
 import EditLayoutModal from './components/EditLayoutModal';
 import LayoutDetailsModal from './components/LayoutDetailsModal';
 
-const MY_TELEGRAM_USERNAME = '@invisibledl';
-
-const INITIAL_LAYOUTS = [
-  {
-    id: '1',
-    title: 'Dark Fantasy RPG UI Kit & Dashboard',
-    category: 'Games UI',
-    price: 29,
-    previewImage: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80',
-    tags: ['Auto-layout', 'Design System', 'Dark Mode'],
-    description: 'Масштабный UI Kit в темном стиле для RPG игр и гейминг-порталов. Содержит компоненты дашбордов, инвентаря и профилей.',
-    author: { name: 'Alex Design', avatar: 'https://i.pravatar.cc/150?img=11' }
-  },
-  {
-    id: '2',
-    title: 'Wavy E-Commerce Storefront 2026',
-    category: 'E-Commerce',
-    price: 19,
-    previewImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
-    tags: ['Shopify', 'React Ready', 'Components'],
-    description: 'Современный интернет-магазин с адаптивным дизайном под мобильные устройства и десктоп. Готовые страницы каталога и корзины.',
-    author: { name: 'DevStudio', avatar: 'https://i.pravatar.cc/150?img=33' }
-  },
-  {
-    id: '3',
-    title: 'SaaS Analytics & AI Control Panel',
-    category: 'Dashboard',
-    price: 35,
-    previewImage: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
-    tags: ['Figma Variables', 'Charts', 'SaaS'],
-    description: 'Панель управления для SaaS продуктов с графиками, таблицами и темной темой на базе переменных Figma.',
-    author: { name: 'Elena UI', avatar: 'https://i.pravatar.cc/150?img=47' }
-  }
-];
+const MY_TELEGRAM_USERNAME = 'invisibledl';
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(true);
-  
+
+  // Данные профиля пользователя (по-прежнему сохраняем локально)
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('figma_vault_user');
     return savedUser ? JSON.parse(savedUser) : {
       name: 'Максим',
       email: 'maxim@example.com',
-      role: 'admin',
+      role: 'admin', // или 'user'
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
     };
   });
 
-  const [layouts, setLayouts] = useState(() => {
-    const savedLayouts = localStorage.getItem('figma_vault_layouts');
-    return savedLayouts ? JSON.parse(savedLayouts) : INITIAL_LAYOUTS;
-  });
+  // Состояние для макетов и индикатора загрузки
+  const [layouts, setLayouts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Модальные окна
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isAddLayoutOpen, setIsAddLayoutOpen] = useState(false);
-  
   const [isEditLayoutOpen, setIsEditLayoutOpen] = useState(false);
   const [editingLayout, setEditingLayout] = useState(null);
 
-  // Состояние для модального окна подробного просмотра макета
+  // Подробный просмотр макета
   const [selectedLayout, setSelectedLayout] = useState(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
+  // Корзина и анимации
   const [cart, setCart] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Все');
@@ -82,16 +51,112 @@ export default function App() {
   const cartRef = useRef(null);
   const categories = ['Все', 'E-Commerce', 'Dashboard', 'Landing', 'Games UI'];
 
+  // 1. Загрузка макетов из Supabase при монтировании компонента
+  useEffect(() => {
+    fetchLayouts();
+  }, []);
+
+  const fetchLayouts = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('layouts')
+        .select('*')
+        .order('id', { ascending: false });
+
+      if (error) {
+        console.error('Ошибка при загрузке макетов из Supabase:', error.message);
+      } else if (data) {
+        // Форматируем данные из Supabase под структуру компонентов
+        const formattedLayouts = data.map((item) => ({
+          id: item.id.toString(),
+          title: item.title,
+          category: item.category,
+          price: Number(item.price),
+          previewImage: item.preview_image || item.previewImage,
+          tags: Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? JSON.parse(item.tags) : []),
+          description: item.description || '',
+          author: item.author || { name: 'Администратор', avatar: 'https://i.pravatar.cc/150?img=11' }
+        }));
+        setLayouts(formattedLayouts);
+      }
+    } catch (err) {
+      console.error('Непредвиденная ошибка:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     localStorage.setItem('figma_vault_user', JSON.stringify(user));
   }, [user]);
 
-  useEffect(() => {
-    localStorage.setItem('figma_vault_layouts', JSON.stringify(layouts));
-  }, [layouts]);
-
   const isAdmin = user && user.role === 'admin';
 
+  // 2. Добавление нового макета в Supabase
+  const handleAddLayout = async (newLayout) => {
+    const layoutToInsert = {
+      title: newLayout.title,
+      category: newLayout.category,
+      price: newLayout.price,
+      preview_image: newLayout.previewImage,
+      tags: newLayout.tags,
+      description: newLayout.description || '',
+      author: newLayout.author
+    };
+
+    const { data, error } = await supabase
+      .from('layouts')
+      .insert([layoutToInsert])
+      .select();
+
+    if (error) {
+      console.error('Ошибка добавления в Supabase:', error.message);
+    } else if (data && data[0]) {
+      const insertedItem = {
+        ...newLayout,
+        id: data[0].id.toString()
+      };
+      setLayouts([insertedItem, ...layouts]);
+    }
+  };
+
+  // 3. Обновление макета в Supabase
+  const handleSaveLayout = async (updatedLayout) => {
+    const { error } = await supabase
+      .from('layouts')
+      .update({
+        title: updatedLayout.title,
+        category: updatedLayout.category,
+        price: updatedLayout.price,
+        preview_image: updatedLayout.previewImage,
+        tags: updatedLayout.tags,
+        description: updatedLayout.description
+      })
+      .eq('id', updatedLayout.id);
+
+    if (error) {
+      console.error('Ошибка обновления в Supabase:', error.message);
+    } else {
+      setLayouts(layouts.map((item) => (item.id === updatedLayout.id ? updatedLayout : item)));
+    }
+  };
+
+  // 4. Удаление макета из Supabase
+  const handleDeleteLayout = async (id) => {
+    const { error } = await supabase
+      .from('layouts')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Ошибка удаления из Supabase:', error.message);
+    } else {
+      setLayouts(layouts.filter((item) => item.id !== id));
+    }
+  };
+
+  // Анимация улета картинки в корзину
   const triggerFlyAnimation = (sourceRect, imageSrc) => {
     if (!cartRef.current) return;
     const cartRect = cartRef.current.getBoundingClientRect();
@@ -131,21 +196,9 @@ export default function App() {
     setCart(cart.filter((item) => item.id !== id));
   };
 
-  const handleAddLayout = (newLayout) => {
-    setLayouts([newLayout, ...layouts]);
-  };
-
-  const handleDeleteLayout = (id) => {
-    setLayouts(layouts.filter((item) => item.id !== id));
-  };
-
   const handleOpenEditLayout = (layout) => {
     setEditingLayout(layout);
     setIsEditLayoutOpen(true);
-  };
-
-  const handleSaveLayout = (updatedLayout) => {
-    setLayouts(layouts.map((item) => (item.id === updatedLayout.id ? updatedLayout : item)));
   };
 
   const handleCardClick = (layout) => {
@@ -160,9 +213,8 @@ export default function App() {
   });
 
   return (
-    <div className={`min-h-screen font-sans antialiased transition-colors duration-300 relative ${
-      darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
-    }`}>
+    <div className={`min-h-screen font-sans antialiased transition-colors duration-300 relative ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
+      }`}>
       {flyingItems.map((item) => (
         <img
           key={item.id}
@@ -194,18 +246,19 @@ export default function App() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className={`text-center py-16 px-4 rounded-3xl border mb-12 relative overflow-hidden transition-colors duration-300 ${
-          darkMode
-            ? 'bg-gradient-to-b from-purple-950/40 via-slate-950 to-slate-950 border-purple-900/40 shadow-[0_0_50px_rgba(163,230,53,0.05)]'
-            : 'bg-gradient-to-b from-purple-100/60 via-white to-white border-purple-200 shadow-sm'
-        }`}>
+        <div className={`text-center py-16 px-4 rounded-3xl border mb-12 relative overflow-hidden transition-colors duration-300 ${darkMode
+          ? 'bg-gradient-to-b from-purple-950/40 via-slate-950 to-slate-950 border-purple-900/40 shadow-[0_0_50px_rgba(163,230,53,0.05)]'
+          : 'bg-gradient-to-b from-purple-100/60 via-white to-white border-purple-200 shadow-sm'
+          }`}>
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-lime-400/10 rounded-full blur-3xl pointer-events-none" />
-          
+
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight mb-4 relative z-10">
             Маркетплейс <span className="text-transparent bg-clip-text bg-gradient-to-r from-lime-400 via-emerald-400 to-purple-400">Figma макетов</span>
           </h1>
           <p className={`text-lg max-w-2xl mx-auto relative z-10 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            Нажмите на любую карточку, чтобы посмотреть подробное описание макета.
+            {isAdmin
+              ? 'Режим администратора: все изменения синхронизируются с базой данных Supabase.'
+              : 'Выбирайте макеты, добавляйте в корзину и оформляйте заказ через Telegram.'}
           </p>
 
           {isAdmin && (
@@ -225,21 +278,32 @@ export default function App() {
           darkMode={darkMode}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredLayouts.map((layout) => (
-            <LayoutCard
-              key={layout.id}
-              layout={layout}
-              onAddToCart={handleAddToCart}
-              onDeleteLayout={handleDeleteLayout}
-              onEditLayout={handleOpenEditLayout}
-              onCardClick={handleCardClick}
-              isInCart={cart.some((item) => item.id === layout.id)}
-              darkMode={darkMode}
-              isAdmin={isAdmin}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="text-center py-20">
+            <div className="w-12 h-12 border-4 border-lime-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Загрузка макетов из базы данных...</p>
+          </div>
+        ) : filteredLayouts.length === 0 ? (
+          <div className="text-center py-16">
+            <p className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Макеты не найдены.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredLayouts.map((layout) => (
+              <LayoutCard
+                key={layout.id}
+                layout={layout}
+                onAddToCart={handleAddToCart}
+                onDeleteLayout={handleDeleteLayout}
+                onEditLayout={handleOpenEditLayout}
+                onCardClick={handleCardClick}
+                isInCart={cart.some((item) => item.id === layout.id)}
+                darkMode={darkMode}
+                isAdmin={isAdmin}
+              />
+            ))}
+          </div>
+        )}
       </main>
 
       <AuthModal
@@ -279,6 +343,7 @@ export default function App() {
         onAddToCart={handleAddToCart}
         isInCart={selectedLayout ? cart.some((item) => item.id === selectedLayout.id) : false}
         darkMode={darkMode}
+        isAdmin={isAdmin}
       />
 
       <CartModal

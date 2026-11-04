@@ -90,16 +90,18 @@ export default function LayoutCard({ layout, onAddToCart, onDeleteLayout, onEdit
             </span>
           </div>
 
-          <button
-            onClick={handleBtnClick}
-            className={`px-4 py-2.5 font-black text-sm rounded-xl transition-all duration-300 shadow-md active:scale-95 flex items-center gap-2 ${
-              isInCart
-                ? 'bg-slate-800 border border-lime-400 text-lime-400 hover:bg-slate-700'
-                : 'bg-lime-400 hover:bg-lime-300 text-slate-950 shadow-[0_0_15px_rgba(163,230,53,0.3)]'
-            }`}
-          >
-            {isInCart ? '✓ В корзине' : 'В корзину'}
-          </button>
+          {!isAdmin && (
+            <button
+              onClick={handleBtnClick}
+              className={`px-4 py-2.5 font-black text-sm rounded-xl transition-all duration-300 shadow-md active:scale-95 flex items-center gap-2 ${
+                isInCart
+                  ? 'bg-slate-800 border border-lime-400 text-lime-400 hover:bg-slate-700'
+                  : 'bg-lime-400 hover:bg-lime-300 text-slate-950 shadow-[0_0_15px_rgba(163,230,53,0.3)]'
+              }`}
+            >
+              {isInCart ? '✓ В корзине' : 'В корзину'}
+            </button>
+          )}
         </div>
       </div>
     </div>
