@@ -1,0 +1,35 @@
+@tailwind base;
+@import "tailwindcss";
+@tailwind components;
+@tailwind utilities;
+
+@keyframes flyToCart {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translate(calc(var(--target-x) * 0.5), calc(var(--target-y) * 0.5)) scale(0.6) rotate(15deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--target-x), var(--target-y)) scale(0.1) rotate(45deg);
+  }
+}
+
+.animate-fly-cart {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  animation: flyToCart 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes pulseLime {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+}
+
+.animate-badge-pop {
+  animation: pulseLime 0.3s ease-in-out;
+}
