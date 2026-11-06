@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const CATEGORIES = ['Fashion and Style', 'Music', 'Crypto', 'Travel Agency'];
+const CATEGORIES = ['Fashion and Style', 'Music', 'Travel Agency'];
 
 export default function EditLayoutModal({ isOpen, onClose, layout, onSaveLayout, darkMode }) {
   const [formData, setFormData] = useState({

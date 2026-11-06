@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const CATEGORIES = ['Fashion and Style', 'Music', 'Crypto', 'Travel Agency'];
+const CATEGORIES = ['Fashion and Style', 'Music', 'Travel Agency'];
 
 const EMPTY_FORM = {
   title: '',
