@@ -43,6 +43,7 @@ export default function App() {
 
   // Модальные окна
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authMessage, setAuthMessage] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isAddLayoutOpen, setIsAddLayoutOpen] = useState(false);
@@ -102,7 +103,7 @@ export default function App() {
     localStorage.setItem('figma_vault_user', JSON.stringify(user));
   }, [user]);
 
-    // Подписка на сессию Supabase Auth
+  // Подписка на сессию Supabase Auth
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUser(mapSupabaseUser(data.session?.user));
@@ -220,6 +221,14 @@ export default function App() {
   };
 
   const handleAddToCart = (layout, btnRect, imageSrc) => {
+    // Гость не может добавлять в корзину: открываем окно входа
+    if (!user) {
+      setIsDetailsOpen(false);
+      setAuthMessage('Войдите или зарегистрируйтесь, чтобы добавить макет в корзину');
+      setIsAuthOpen(true);
+      return;
+    }
+
     if (cart.some((item) => item.id === layout.id)) {
       setCart(cart.filter((item) => item.id !== layout.id));
     } else {
@@ -270,7 +279,7 @@ export default function App() {
 
       <Header
         user={user}
-        onOpenAuth={() => setIsAuthOpen(true)}
+        onOpenAuth={() => { setAuthMessage(''); setIsAuthOpen(true); }}
         onOpenEditProfile={() => setIsEditProfileOpen(true)}
         onOpenAddLayout={() => setIsAddLayoutOpen(true)}
         onSearchChange={setSearchQuery}
@@ -344,8 +353,9 @@ export default function App() {
 
       <AuthModal
         isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
+        onClose={() => { setIsAuthOpen(false); setAuthMessage(''); }}
         onAuthSuccess={(sbUser) => setUser(mapSupabaseUser(sbUser))}
+        message={authMessage}
         darkMode={darkMode}
       />
 

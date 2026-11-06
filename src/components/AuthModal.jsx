@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 
-export default function AuthModal({ isOpen, onClose, onAuthSuccess, darkMode }) {
+export default function AuthModal({ isOpen, onClose, onAuthSuccess, message, darkMode }) {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
@@ -88,6 +88,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, darkMode }) 
           {isLogin ? 'С возвращением!' : 'Создать аккаунт'}
         </h2>
         <p className={`text-xs text-center mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+          {message && (
+            <p className="text-xs text-center mb-4 text-lime-400 font-semibold">{message}</p>
+          )}
           {isLogin ? 'Войдите в свой аккаунт' : 'Регистрация нового пользователя'}
         </p>
 
