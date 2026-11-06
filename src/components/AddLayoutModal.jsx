@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 
+const CATEGORIES = ['Fashion and Style', 'Music', 'Crypto', 'Travel Agency'];
+
+const EMPTY_FORM = {
+  title: '',
+  category: CATEGORIES[0],
+  price: '',
+  previewImage: '',
+  description: '',
+  tags: ''
+};
+
 export default function AddLayoutModal({ isOpen, onClose, onAddLayout, darkMode }) {
-  const [formData, setFormData] = useState({
-    title: '',
-    category: 'Landing',
-    price: '',
-    previewImage: '',
-    description: '',
-    tags: ''
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
   if (!isOpen) return null;
 
@@ -42,6 +46,7 @@ export default function AddLayoutModal({ isOpen, onClose, onAddLayout, darkMode 
     };
 
     onAddLayout(newLayout);
+    setFormData(EMPTY_FORM); // очищаем форму после добавления
     onClose();
   };
 
@@ -97,10 +102,9 @@ export default function AddLayoutModal({ isOpen, onClose, onAddLayout, darkMode 
                   darkMode ? 'bg-slate-800 border-purple-800/40 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
                 }`}
               >
-                <option value="Fashion and Style">Fashion and Style</option>
-                <option value="Music">Music</option>
-                <option value="Crypto">Crypto</option>
-                <option value="Travel Agency">Travel Agency</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
               </select>
             </div>
 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
+const CATEGORIES = ['Fashion and Style', 'Music', 'Crypto', 'Travel Agency'];
+
 export default function EditLayoutModal({ isOpen, onClose, layout, onSaveLayout, darkMode }) {
   const [formData, setFormData] = useState({
     title: '',
-    category: 'Landing',
+    category: CATEGORIES[0],
     price: '',
     previewImage: '',
     tags: ''
@@ -13,7 +15,7 @@ export default function EditLayoutModal({ isOpen, onClose, layout, onSaveLayout,
     if (layout) {
       setFormData({
         title: layout.title || '',
-        category: layout.category || 'Landing',
+        category: CATEGORIES.includes(layout.category) ? layout.category : CATEGORIES[0],
         price: layout.price || '',
         previewImage: layout.previewImage || '',
         tags: layout.tags ? layout.tags.join(', ') : ''
@@ -88,10 +90,9 @@ export default function EditLayoutModal({ isOpen, onClose, layout, onSaveLayout,
                   darkMode ? 'bg-slate-800 border-purple-800/40 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
                 }`}
               >
-                <option value="Landing">Landing</option>
-                <option value="E-Commerce">E-Commerce</option>
-                <option value="Dashboard">Dashboard</option>
-                <option value="Games UI">Games UI</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
               </select>
             </div>
 
