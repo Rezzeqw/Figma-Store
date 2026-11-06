@@ -1,26 +1,51 @@
 import React, { useState } from 'react';
+import { supabase } from '../supabaseClient';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess, darkMode }) {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Делаем администратором, если email содержит admin или равен специальному адресу
-    const isAdmin = formData.email.toLowerCase().includes('admin');
-    
-    const userData = {
-      name: formData.name || (isAdmin ? 'Администратор' : 'Максим'),
-      email: formData.email,
-      role: isAdmin ? 'admin' : 'user',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
-    };
+    setError('');
+    setInfo('');
+    setLoading(true);
 
-    onAuthSuccess(userData);
-    onClose();
+    try {
+      if (isLogin) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password
+        });
+        if (error) throw error;
+        onAuthSuccess(data.user);
+        onClose();
+      } else {
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: { data: { name: formData.name } }
+        });
+        if (error) throw error;
+        if (data.session) {
+          onAuthSuccess(data.user);
+          onClose();
+        } else {
+          setInfo('Мы отправили письмо для подтверждения. Подтвердите email и войдите.');
+          setIsLogin(true);
+        }
+      }
+    } catch (err) {
+      setError(err.message || 'Что-то пошло не так');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -31,34 +56,29 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, darkMode }) 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
       <div className="fixed inset-0" onClick={onClose} />
 
-      <div className={`relative z-10 w-full max-w-md border rounded-3xl p-6 sm:p-8 shadow-2xl transition-colors duration-300 ${
-        darkMode ? 'bg-slate-900 border-purple-900/50 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
+      <div className={`relative z-10 w-full max-w-md border rounded-3xl p-6 sm:p-8 shadow-2xl transition-colors duration-300 ${darkMode ? 'bg-slate-900 border-purple-900/50 text-white' : 'bg-white border-slate-200 text-slate-900'
+        }`}>
         <button
           onClick={onClose}
-          className={`absolute top-5 right-5 p-2 rounded-xl transition-colors ${
-            darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-          }`}
+          className={`absolute top-5 right-5 p-2 rounded-xl transition-colors ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+            }`}
         >
           ✕
         </button>
 
-        <div className={`flex p-1 rounded-2xl mb-6 border ${
-          darkMode ? 'bg-purple-950/30 border-purple-800/40' : 'bg-slate-100 border-slate-200'
-        }`}>
+        <div className={`flex p-1 rounded-2xl mb-6 border ${darkMode ? 'bg-purple-950/30 border-purple-800/40' : 'bg-slate-100 border-slate-200'
+          }`}>
           <button
             onClick={() => setIsLogin(true)}
-            className={`flex-1 py-2.5 text-sm font-black rounded-xl transition-all ${
-              isLogin ? 'bg-lime-400 text-slate-950 shadow-md' : 'text-slate-400'
-            }`}
+            className={`flex-1 py-2.5 text-sm font-black rounded-xl transition-all ${isLogin ? 'bg-lime-400 text-slate-950 shadow-md' : 'text-slate-400'
+              }`}
           >
             Вход
           </button>
           <button
             onClick={() => setIsLogin(false)}
-            className={`flex-1 py-2.5 text-sm font-black rounded-xl transition-all ${
-              !isLogin ? 'bg-lime-400 text-slate-950 shadow-md' : 'text-slate-400'
-            }`}
+            className={`flex-1 py-2.5 text-sm font-black rounded-xl transition-all ${!isLogin ? 'bg-lime-400 text-slate-950 shadow-md' : 'text-slate-400'
+              }`}
           >
             Регистрация
           </button>
@@ -68,7 +88,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, darkMode }) 
           {isLogin ? 'С возвращением!' : 'Создать аккаунт'}
         </h2>
         <p className={`text-xs text-center mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-          {isLogin ? 'Введите admin в email для прав админа' : 'Регистрация нового пользователя'}
+          {isLogin ? 'Войдите в свой аккаунт' : 'Регистрация нового пользователя'}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -79,28 +99,27 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, darkMode }) 
                 type="text"
                 name="name"
                 required
+                minLength={6}
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="Максим"
-                className={`w-full text-sm rounded-xl px-4 py-3 border focus:outline-none focus:border-lime-400 ${
-                  darkMode ? 'bg-slate-800/80 border-purple-800/40 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
-                }`}
+                className={`w-full text-sm rounded-xl px-4 py-3 border focus:outline-none focus:border-lime-400 ${darkMode ? 'bg-slate-800/80 border-purple-800/40 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                  }`}
               />
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-bold mb-1.5">Email (введите admin@... для прав админа)</label>
+            <label className="block text-xs font-bold mb-1.5">Email</label>
             <input
               type="email"
               name="email"
               required
               value={formData.email}
               onChange={handleChange}
-              placeholder="admin@example.com"
-              className={`w-full text-sm rounded-xl px-4 py-3 border focus:outline-none focus:border-lime-400 ${
-                darkMode ? 'bg-slate-800/80 border-purple-800/40 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
-              }`}
+              placeholder="you@example.com"
+              className={`w-full text-sm rounded-xl px-4 py-3 border focus:outline-none focus:border-lime-400 ${darkMode ? 'bg-slate-800/80 border-purple-800/40 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                }`}
             />
           </div>
 
@@ -111,12 +130,12 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, darkMode }) 
                 type={showPassword ? 'text' : 'password'}
                 name="password"
                 required
+                minLength={6}
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className={`w-full text-sm rounded-xl px-4 py-3 pr-12 border focus:outline-none focus:border-lime-400 ${
-                  darkMode ? 'bg-slate-800/80 border-purple-800/40 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
-                }`}
+                className={`w-full text-sm rounded-xl px-4 py-3 pr-12 border focus:outline-none focus:border-lime-400 ${darkMode ? 'bg-slate-800/80 border-purple-800/40 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                  }`}
               />
               <button
                 type="button"
@@ -137,11 +156,17 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, darkMode }) 
             </div>
           </div>
 
+
+
+          {error && <p className="text-xs text-red-400 font-semibold">{error}</p>}
+          {info && <p className="text-xs text-lime-400 font-semibold">{info}</p>}
+
           <button
             type="submit"
-            className="w-full mt-2 py-3.5 bg-lime-400 hover:bg-lime-300 text-slate-950 font-black text-sm rounded-xl transition-all shadow-[0_0_20px_rgba(163,230,53,0.3)] active:scale-95"
+            disabled={loading}
+            className="w-full mt-2 py-3.5 bg-lime-400 hover:bg-lime-300 text-slate-950 font-black text-sm rounded-xl transition-all shadow-[0_0_20px_rgba(163,230,53,0.3)] active:scale-95 disabled:opacity-60"
           >
-            {isLogin ? 'Войти' : 'Зарегистрироваться'}
+            {loading ? 'Подождите...' : isLogin ? 'Войти' : 'Зарегистрироваться'}
           </button>
         </form>
       </div>

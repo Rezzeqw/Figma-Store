@@ -12,23 +12,34 @@ import LayoutDetailsModal from './components/LayoutDetailsModal';
 
 const MY_TELEGRAM_USERNAME = 'invisibledl';
 
+// Только эти email получают права админа
+const ADMIN_EMAILS = ['kotyakotyarovich@gmail.com'];
+
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80';
+
+const mapSupabaseUser = (sbUser) => {
+  if (!sbUser) return null;
+  const email = sbUser.email || '';
+  const meta = sbUser.user_metadata || {};
+  return {
+    id: sbUser.id,
+    email,
+    name: meta.name || email.split('@')[0] || 'Пользователь',
+    avatar: meta.avatar || DEFAULT_AVATAR,
+    role: ADMIN_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'user'
+  };
+};
+
 export default function App() {
   const [darkMode, setDarkMode] = useState(true);
 
-  // Данные профиля пользователя (по-прежнему сохраняем локально)
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('figma_vault_user');
-    return savedUser ? JSON.parse(savedUser) : {
-      name: 'Максим',
-      email: 'maxim@example.com',
-      role: 'admin', // или 'user'
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
-    };
-  });
+  // Текущий пользователь: null = гость
+  const [user, setUser] = useState(null);
 
   // Состояние для макетов и индикатора загрузки
   const [layouts, setLayouts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
 
   // Модальные окна
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -309,7 +320,7 @@ export default function App() {
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
-        onAuthSuccess={(userData) => setUser(userData)}
+        onAuthSuccess={(sbUser) => setUser(mapSupabaseUser(sbUser))}
         darkMode={darkMode}
       />
 
@@ -317,7 +328,8 @@ export default function App() {
         isOpen={isEditProfileOpen}
         onClose={() => setIsEditProfileOpen(false)}
         user={user}
-        onSave={(updatedUser) => setUser(updatedUser)}
+        onSave={handleSaveProfile}
+        onLogout={handleLogout}
         darkMode={darkMode}
       />
 
