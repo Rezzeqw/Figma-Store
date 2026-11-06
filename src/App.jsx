@@ -61,7 +61,7 @@ export default function App() {
   const [flyingItems, setFlyingItems] = useState([]);
 
   const cartRef = useRef(null);
-  const categories = ['Все', 'E-Commerce', 'Dashboard', 'Landing', 'Games UI'];
+  const categories = ['Все', 'Web Design', 'UI Kit', 'Crypto', 'Travel Agency'];
 
   // 1. Загрузка макетов из Supabase при монтировании компонента
   useEffect(() => {
