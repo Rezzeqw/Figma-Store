@@ -11,7 +11,7 @@ export default function Header({ user, onOpenAuth, onOpenEditProfile, onOpenAddL
         
         <div className="flex items-center gap-3 cursor-pointer group">
           <div className="w-10 h-10 rounded-xl bg-lime-400 flex items-center justify-center font-black text-slate-950 text-xl shadow-[0_0_20px_rgba(163,230,53,0.4)] group-hover:scale-105 transition-transform duration-300">
-            <img src="./public/dd8bdbd6-5b3f-4559-9372-fbe7a2b927fd.png" alt="Logo" className="w-10 h-10 rounded-xl object-cover" />
+            <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl object-cover" />
           </div>
           <span className="text-xl font-black bg-gradient-to-r from-lime-400 via-emerald-400 to-purple-400 bg-clip-text text-transparent">
             Figma Store
