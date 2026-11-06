@@ -102,6 +102,31 @@ export default function App() {
     localStorage.setItem('figma_vault_user', JSON.stringify(user));
   }, [user]);
 
+    // Подписка на сессию Supabase Auth
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(mapSupabaseUser(data.session?.user));
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(mapSupabaseUser(session?.user));
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
+
+  const handleSaveProfile = async ({ name, avatar }) => {
+    const { error } = await supabase.auth.updateUser({ data: { name, avatar } });
+    if (error) {
+      console.error('Ошибка обновления профиля:', error.message);
+    } else {
+      setUser((prev) => ({ ...prev, name, avatar }));
+    }
+  };
+
   const isAdmin = user && user.role === 'admin';
 
   // 2. Добавление нового макета в Supabase
