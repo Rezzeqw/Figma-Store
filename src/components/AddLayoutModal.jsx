@@ -97,10 +97,10 @@ export default function AddLayoutModal({ isOpen, onClose, onAddLayout, darkMode 
                   darkMode ? 'bg-slate-800 border-purple-800/40 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
                 }`}
               >
-                <option value="Landing">Landing</option>
-                <option value="E-Commerce">E-Commerce</option>
-                <option value="Dashboard">Dashboard</option>
-                <option value="Games UI">Games UI</option>
+                <option value="Fashion and Style">Fashion and Style</option>
+                <option value="Music">Music</option>
+                <option value="Crypto">Crypto</option>
+                <option value="Travel Agency">Travel Agency</option>
               </select>
             </div>
 
