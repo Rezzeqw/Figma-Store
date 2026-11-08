@@ -9,6 +9,7 @@ import EditProfileModal from './components/EditProfileModal';
 import AddLayoutModal from './components/AddLayoutModal';
 import EditLayoutModal from './components/EditLayoutModal';
 import LayoutDetailsModal from './components/LayoutDetailsModal';
+import ResetPasswordModal from './components/ResetPasswordModal';
 
 const MY_TELEGRAM_USERNAME = 'invisibledl';
 
@@ -49,6 +50,11 @@ export default function App() {
   const [isAddLayoutOpen, setIsAddLayoutOpen] = useState(false);
   const [isEditLayoutOpen, setIsEditLayoutOpen] = useState(false);
   const [editingLayout, setEditingLayout] = useState(null);
+
+  // Сброс пароля: открывается, когда пользователь пришёл по ссылке из письма
+  const [isResetOpen, setIsResetOpen] = useState(
+    () => window.location.hash.includes('type=recovery')
+  );
 
   // Подробный просмотр макета
   const [selectedLayout, setSelectedLayout] = useState(null);
@@ -108,8 +114,13 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       setUser(mapSupabaseUser(data.session?.user));
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(mapSupabaseUser(session?.user));
+      if (event === 'PASSWORD_RECOVERY') setIsResetOpen(true);
+      // после перехода по ссылке из письма убираем токены из адресной строки
+      if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -391,6 +402,15 @@ export default function App() {
         isInCart={selectedLayout ? cart.some((item) => item.id === selectedLayout.id) : false}
         darkMode={darkMode}
         isAdmin={isAdmin}
+      />
+
+      <ResetPasswordModal
+        isOpen={isResetOpen}
+        onClose={() => {
+          setIsResetOpen(false);
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }}
+        darkMode={darkMode}
       />
 
       <CartModal
